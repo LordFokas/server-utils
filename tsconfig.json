@@ -1,0 +1,16 @@
+{
+	"compilerOptions": {
+		"esModuleInterop": true,
+		"moduleResolution": "node",
+		"module": "ESNext",
+		"target": "ESNext",
+		"useDefineForClassFields": true,
+		"declaration": true,
+
+		"noImplicitAny": true,
+		"allowJs": true,
+
+		"outDir": "./dist"
+	},
+	"include": ["src/**/*"]
+}
