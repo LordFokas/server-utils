@@ -10,7 +10,7 @@ import express from 'express';
  * - Package entry point (main / module / browser keys)
  * - Package submodule exports (exports object)
  * - Resolution is performed via HTTP 3XX redirect to absolute path
- * so as to not break relative path module imports (NOT IMPLEMENTED YET!)
+ * so as to not break relative path module imports
  * 
  * The entry point priority from `package.json` is as follows:
  * - browser
@@ -21,14 +21,14 @@ import express from 'express';
  * @param node_modules path to node_modules
  * @returns express.Router() serving this one specific module
  */
-export function serveModule(module: string, node_modules: string){
+export function serveModule(module: string, node_modules: string, base_url: string){
     const router = express.Router();
     const dir = path.join(node_modules, module);
     const pkg = JSON.parse(fs.readFileSync(path.join(dir, "package.json")).toString());
 
     // Serve main lib file
-    const main = path.join(dir, pkg.browser ?? pkg.module ?? pkg.main);
-    router.get('/', (_, res) => res.sendFile(main));
+    const main = path.join(base_url, pkg.browser ?? pkg.module ?? pkg.main);
+    router.get('/', (_, res) => redirectModule(res, main));
 
     // Serve lib submodules
     const pkg_exports: Record<string, string> = pkg.exports ?? {};
@@ -37,30 +37,26 @@ export function serveModule(module: string, node_modules: string){
         if(submodule.length == 0) continue; // main module, ignore, already served.
         if(submodule.endsWith('*')){ // glob submodules
             router.get("/"+submodule.replace(/\*$/, ':file'), (req, res) => {
-                const reqfile = path.join(dir, file.replace('*', req.params.file));
-                const relative = path.relative(dir, reqfile);
-                const isInModule = relative && !relative.startsWith('..') && !path.isAbsolute(relative);
-                if(isInModule){
-                    res.sendFile(reqfile);
-                }else{
-                    res.sendStatus(403);
-                }
+                const reqfile = path.join(base_url, file.replace('*', req.params.file));
+                redirectModule(res, reqfile);
             });
-            console.log(submodule, '=>', path.join(dir, file));
             continue;
         }
-        const target = path.join(dir, file);
+        
         if(file.endsWith(".js")){ // file submodule
-            router.get("/"+submodule, (_, res) => res.sendFile(target));
+            const target = path.join(base_url, file);
+            router.get("/"+submodule, (_, res) => redirectModule(res, target));
         }else{ // dir submodule
-            router.use("/"+submodule, express.static(target));
+            router.get("/"+submodule, (req, res) => redirectModule(res, path.join(base_url, submodule, req.url)));
         }
-        console.log(submodule, '=>', target);
     }
 
     // Serve lib files directly (fallback)
-    router.use("/"+module, express.static(dir));
-    console.log('');
+    router.use("/", express.static(dir));
 
     return router;
+}
+
+function redirectModule(res: express.Response, location: string){
+    res.header("location", location).sendStatus(302);
 }
