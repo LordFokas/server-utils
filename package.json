@@ -1,6 +1,6 @@
 {
   "name": "@lordfokas/server-utils",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Common misc utilities for use in the server-side",
   "main": "dist/server-utils.js",
   "type": "module",

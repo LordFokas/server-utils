@@ -53,7 +53,7 @@ export function serveModule(module: string, node_modules: string, base_url: stri
     // Serve lib submodules
     const pkg_exports: Record<string, string> = pkg.exports ?? {};
     for(const [exp, file] of Object.entries(pkg_exports)){
-        let submodule = exp.replace(/^\./, '');
+        let submodule = exp.replace(/^\.\/?/, '');
         if(submodule.length == 0) continue; // main module, ignore, already served.
         if(submodule.endsWith('*')){ // glob submodules
             router.get("/"+submodule.replace(/\*$/, ':file'), (req, res) => {
