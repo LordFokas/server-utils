@@ -2,9 +2,30 @@ import path from 'node:path';
 import fs from 'node:fs';
 import express from 'express';
 
+
+/**
+ * Shortcut to serve multiple node modules via express.
+ * 
+ * See {@link serveModule} for more technical module-level documentation
+ * 
+ * @param modules whitelist of modules to serve
+ * @param node_modules path to node_modules
+ * @param base_url path from the root of the server to this module router
+ * @returns express.Router() serving all given modules as if it were the `node_modules` dir
+ */
+export function serveModules(modules: string[], node_modules: string, base_url: string){
+    const router = express.Router();
+    for(const module of modules){
+        router.use('/'+module, serveModule(module, node_modules, path.join(base_url, module)));
+    }
+    return router;
+}
+
+
 /**
  * Serve the contents of a node module via express.
- * Requires express to be installed.
+ * 
+ * See {@link serveModules} for a multi-module shortcut
  * 
  * Automatically resolves the following:
  * - Package entry point (main / module / browser keys)
@@ -13,12 +34,11 @@ import express from 'express';
  * so as to not break relative path module imports
  * 
  * The entry point priority from `package.json` is as follows:
- * - browser
- * - module
- * - main
+ * `browser > module > main`
  * 
  * @param module module to serve
  * @param node_modules path to node_modules
+ * @param base_url path from the root of the server to this module root
  * @returns express.Router() serving this one specific module
  */
 export function serveModule(module: string, node_modules: string, base_url: string){
