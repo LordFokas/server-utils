@@ -118,14 +118,6 @@ export async function managedShutdown(server: HTTPServer | HTTPSServer, timeout:
 
             logger?.warn("\nCaught SIGINT from user (Ctrl+C), shutting down");
 
-            // Ask the HTTP server to stop accepting further connections and finish ongoing ones.
-            gsm.terminate(() => { // Callback runs when the server fully shuts down.
-                if(timer){
-                    clearTimeout(timer); // Clear existing shutdown timeout so the process can terminate.
-                }
-                logger?.info("Server terminated gracefully");
-            });
-
             // Set a timeout to switch the shutdown mode of next SIGINT to agressive (kill)
             // in case the server refuses to terminate (something hanged and the process is stuck)
             timer = setTimeout(() => {
@@ -135,6 +127,14 @@ export async function managedShutdown(server: HTTPServer | HTTPSServer, timeout:
                 );
                 graceful = false;
             }, timeout);
+
+            // Ask the HTTP server to stop accepting further connections and finish ongoing ones.
+            gsm.terminate(() => { // Callback runs when the server fully shuts down.
+                if(timer){
+                    clearTimeout(timer); // Clear existing shutdown timeout so the process can terminate.
+                }
+                logger?.info("Server terminated gracefully");
+            });
         }
 
         // Aggressively terminate the process
